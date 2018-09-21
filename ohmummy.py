@@ -96,11 +96,14 @@ class Dashboard():
                                 y * self.game_dashboard.tileheight))
     
     def update(self, player):
+        pass
+        '''
         self.score = player.get_score()
         self.inventory = player.get_score()
         self.keys = player.get_keys()
         self.ammo = player.get_ammo()
         self.lives = player.get_lives()
+        '''
 
 class Map():
     def __init__(self, filename):
@@ -143,6 +146,9 @@ def main():
     # create the map
     level_map = Map("map/map03.tmx")
 
+    # create the dashboard
+    dash = Dashboard("map/dash.tmx")
+
     # create the player
     player = Player([100, 100])
 
@@ -180,12 +186,14 @@ def main():
 
         # write game logic here
         player.update()
+        dash.update(player)
 
         # clear the screen before drawing
         screen.fill(AMAZON)
 
         # write draw code here
         level_map.draw(screen)
+        dash.draw(screen)
         player.draw()
 
         # display whatever is drawn
