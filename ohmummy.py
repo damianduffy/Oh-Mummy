@@ -7,7 +7,7 @@ import os
 SCREENSIZE              = [960, 540]
 FPS                     = 30
 TITLE                   = "Oh Mummy"
-SHOW_MOUSE              = False
+SHOW_MOUSE              = True
 CURRENT_GAME_STATE      = 0
 GAME_STATE_SPLASH       = 1
 GAME_STATE_MENU         = 2
@@ -16,6 +16,12 @@ GAME_STATE_OVER         = 4
 SOUND                   = False
 
 AMAZON                  = (69, 139, 116)
+WALL                    = (211, 84, 0)
+PATH                    = (154, 125, 10)
+EXIT                    = (93, 173, 226)
+ENTRANCE                = (142, 68, 173)
+TRAIL                   = (244, 208, 63)
+BORDER                  = (146, 43, 33)
 
 # Initialize game engine, screen and clock
 pygame.init()
@@ -106,17 +112,47 @@ class Dashboard():
         '''
 
 class Map():
-    def __init__(self, filename):
-        self.game_map = load_pygame(filename)
-        self.top_margin = 60
+    def __init__(self):
+        self.map = [
+            # 0 - border
+            # 1 - path (unwalked)
+            # 2 - wall
+            # 3 - path (walked)
+            # 4 - TBC
+            # 5 - exit / entrance
+            [0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+        self.map_set = {
+            "0": BORDER,
+            "1": PATH,
+            "2": WALL,
+            "3": TRAIL,
+            "4": "TBC",
+            "5": ENTRANCE
+        }
+        self.tile_size = 32
+        self.map_height = len(self.map)
+        self.map_width = len(self.map[0])
 
     def draw(self, screen):
-        for layer in self.game_map.visible_layers:
-            for x, y, gid, in layer:
-                tile = self.game_map.get_tile_image_by_gid(gid)
-                if tile != None:
-                    screen.blit(tile, (x * self.game_map.tilewidth, 
-                                (y * self.game_map.tileheight) + self.top_margin))
+        for row in range(self.map_width):            
+            for col in range(self.map_height):
+                pygame.draw.rect(
+                    screen, 
+                    self.map_set[str(self.map[row][col])], 
+                    (col * self.tile_size, row * self.tile_size, self.tile_size, self.tile_size)
+                )          
+        
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos):
@@ -136,21 +172,28 @@ class Player(pygame.sprite.Sprite):
         self.pos = [self.pos[0] + (self.move_speed * self.vel_x), 
                     self.pos[1] + (self.move_speed * self.vel_y)]
     
+    def get_position(self):
+        return self.pos
+    
+    def get_tile_position(self):
+        tile_coords = [self.pos[0] // 32, self.pos[1] // 32]
+        return tile_coords
+    
     def set_vel_x(self, direction):
         self.vel_x = direction
     
     def set_vel_y(self, direction):
         self.vel_y = direction
 
+
 def main():
     # create the map
-    level_map = Map("map/map03.tmx")
+    level_map = Map()
 
     # create the dashboard
-    dash = Dashboard("map/dash.tmx")
-
+    
     # create the player
-    player = Player([100, 100])
+    player = Player([160, 32])
 
     # load a mob
     
@@ -186,14 +229,12 @@ def main():
 
         # write game logic here
         player.update()
-        dash.update(player)
-
+        
         # clear the screen before drawing
         screen.fill(AMAZON)
 
         # write draw code here
         level_map.draw(screen)
-        dash.draw(screen)
         player.draw()
 
         # display whatever is drawn
