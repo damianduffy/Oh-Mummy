@@ -30,6 +30,7 @@ pygame.mouse.set_visible(SHOW_MOUSE)
 pygame.display.set_caption(TITLE)
 clock = pygame.time.Clock()
 
+
 # Define helper functions
 def load_image(name, colorkey = None):
     fullname = os.path.join('data/img/', name)
@@ -51,6 +52,7 @@ def load_image(name, colorkey = None):
 
     return image # , image.get_rect()
 
+
 def load_sound(name):
     class NoneSound:
         def play(self):
@@ -69,8 +71,10 @@ def load_sound(name):
 
     return sound
 
+
 def exit_game():
     exit()
+
 
 def pause_game():
     pause = 0
@@ -83,6 +87,7 @@ def pause_game():
                     pause = -1
 
     pygame.mixer.unpause()
+
 
 class Dashboard():
     def __init__(self, filename):
@@ -152,7 +157,21 @@ class Map():
                     self.map_set[str(self.map[row][col])], 
                     (col * self.tile_size, row * self.tile_size, self.tile_size, self.tile_size)
                 )          
+    
+    def check_collision(self, pos):
+        '''
+        Need to update so collision checked against player sprite,
+        rather than single point
+        '''
+        tile_x = pos[0] // self.tile_size
+        tile_y = pos[1] // self.tile_size
         
+        if self.map[tile_y][tile_x] % 2 == 0:
+            # return true if there is a collision
+            return True
+
+        return False
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos):
@@ -168,10 +187,15 @@ class Player(pygame.sprite.Sprite):
     def draw(self):
         screen.blit(self.image, (self.pos))
     
-    def update(self):
-        self.pos = [self.pos[0] + (self.move_speed * self.vel_x), 
-                    self.pos[1] + (self.move_speed * self.vel_y)]
-    
+    def update(self, map):
+        if not map.check_collision([self.pos[0] + (self.move_speed * self.vel_x), 
+                                    self.pos[1] + (self.move_speed * self.vel_y)]):
+            print("No Collision")
+            self.pos = [self.pos[0] + (self.move_speed * self.vel_x), 
+                        self.pos[1] + (self.move_speed * self.vel_y)]
+        else:
+            print("Collision detected")
+
     def get_position(self):
         return self.pos
     
@@ -228,7 +252,8 @@ def main():
                     player.set_vel_x(0)
 
         # write game logic here
-        player.update()
+        player.update(level_map)
+        level_map.check_collision([162, 7])
         
         # clear the screen before drawing
         screen.fill(AMAZON)
