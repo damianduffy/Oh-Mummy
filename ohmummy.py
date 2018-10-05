@@ -158,22 +158,20 @@ class Map():
                     (col * self.tile_size, row * self.tile_size, self.tile_size, self.tile_size)
                 )          
     
-    def check_collision(self, sprite_rect, sprite_pos):
-        # work out what tile the next move puts the player in
-        top_left_x = (sprite_pos[0] + 1) // self.tile_size
-        top_left_y = (sprite_pos[1] + 1) // self.tile_size
-        bottom_right_x = (sprite_pos[0] + self.tile_size - 1) // self.tile_size
-        bottom_right_y = (sprite_pos[1] + self.tile_size - 1) // self.tile_size
-        top_right_x = (sprite_pos[0] + self.tile_size - 1) // self.tile_size
-        top_right_y = (sprite_pos[1] + 1) // self.tile_size
-        bottom_left_x = (sprite_pos[0] + 1) // self.tile_size
-        bottom_left_y = (sprite_pos[1] + self.tile_size - 1) // self.tile_size
-        
-        # if the move results in a collision, return true
-        if self.map[top_left_y][top_left_x] % 2 == 0 or self.map[bottom_right_y][bottom_right_x] % 2 == 0 or self.map[top_right_y][top_right_x] % 2 == 0 or self.map[bottom_left_y][bottom_left_x] % 2 == 0:
-            return True
-        # return false if there was no collision
-        return False
+    def check_tile_passable(self, pos):
+        tile = [pos[0] // self.tile_size, pos[1] // self.tile_size]
+        if self.map[tile[1]][tile[0]] % 2 == 0:
+            print("map NOT passable")
+            return False
+        print("map passable")
+        return True
+    
+    def get_tile_value(self, tile):
+        print(self.map[tile[1]][tile[0]])
+        return self.map[tile[1]][tile[0]]
+    
+    def set_tile_value(self, tile, value):
+        self.map[tile[1]][tile[0]] = value
 
 
 class Player(pygame.sprite.Sprite):
@@ -186,34 +184,81 @@ class Player(pygame.sprite.Sprite):
         self.move_speed = 4
         self.image = load_image("character_temp.png")
         self.rect = self.image.get_rect()
+        self.size = 32
+        self.dest_pos = [pos[0], pos[1]]
+        self.moving_x = False
+        self.moving_y = False
     
     def draw(self):
         screen.blit(self.image, (self.pos))
-    
-    def update(self, map):
-        if not map.check_collision(self.rect,
-                                    [self.pos[0] + (self.move_speed * self.vel_x), 
-                                    self.pos[1] + (self.move_speed * self.vel_y)]):
-            self.pos = [self.pos[0] + (self.move_speed * self.vel_x), 
-                        self.pos[1] + (self.move_speed * self.vel_y)]
 
-    def get_position(self):
-        return self.pos
+    def update(self, map):
+        if self.moving_x == True:
+            if self.arrived_x():
+                next_move_pos = [self.dest_pos[0] + (self.size * self.vel_x), self.dest_pos[1]]
+                if map.check_tile_passable(next_move_pos):
+                    self.dest_pos[0] = next_move_pos[0]
+        else:
+            if self.arrived_x():
+                self.vel_x = 0
+        
+        if self.moving_y == True:
+            if self.arrived_y():
+                next_move_pos = [self.dest_pos[0], self.dest_pos[1] + (self.size * self.vel_y)]
+                if map.check_tile_passable(next_move_pos):
+                    self.dest_pos[1] = next_move_pos[1]
+        else:
+            if self.arrived_y():
+                self.vel_y = 0
+        
+        self.pos[0] = self.pos[0] + (self.move_speed * self.get_delta(self.pos[0], self.dest_pos[0]))
+        self.pos[1] = self.pos[1] + (self.move_speed * self.get_delta(self.pos[1], self.dest_pos[1]))
+
+        # update the map tile
+        if map.get_tile_value(self.get_current_tile()) == 1:
+            map.set_tile_value(self.get_current_tile(), 3)
     
-    def get_tile_position(self):
-        tile_coords = [self.pos[0] // 32, self.pos[1] // 32]
-        return tile_coords
+    def arrived_x(self):
+        if self.pos[0] == self.dest_pos[0]:
+            return True
+        return False
     
+    def arrived_y(self):
+        if self.pos[1] == self.dest_pos[1]:
+            return True
+        return False
+
+    def get_delta(self, orig, dest):
+        if dest - orig > 0:
+            return 1
+        elif dest - orig < 0:
+            return -1
+        else:
+            return 0
+
+    def get_current_tile(self):
+        return [self.pos[0] // self.size, self.pos[1] // self.size]
+
     def set_vel_x(self, direction):
-        self.vel_x = direction
+        if direction != 0:
+            self.moving_x = True
+            self.vel_x = direction
+        else:
+            self.moving_x = False
     
     def set_vel_y(self, direction):
-        self.vel_y = direction
+        if direction != 0:
+            self.moving_y = True
+            self.vel_y = direction
+        else:
+            self.moving_y = False
+
 
 
 def main():
     # create the map
     level_map = Map()
+    background_track = load_sound("Streets_of_Cairo.ogg")
 
     # create the dashboard
     
