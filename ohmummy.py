@@ -158,18 +158,21 @@ class Map():
                     (col * self.tile_size, row * self.tile_size, self.tile_size, self.tile_size)
                 )          
     
-    def check_collision(self, pos):
-        '''
-        Need to update so collision checked against player sprite,
-        rather than single point
-        '''
-        tile_x = pos[0] // self.tile_size
-        tile_y = pos[1] // self.tile_size
+    def check_collision(self, sprite_rect, sprite_pos):
+        # work out what tile the next move puts the player in
+        top_left_x = (sprite_pos[0] + 1) // self.tile_size
+        top_left_y = (sprite_pos[1] + 1) // self.tile_size
+        bottom_right_x = (sprite_pos[0] + self.tile_size - 1) // self.tile_size
+        bottom_right_y = (sprite_pos[1] + self.tile_size - 1) // self.tile_size
+        top_right_x = (sprite_pos[0] + self.tile_size - 1) // self.tile_size
+        top_right_y = (sprite_pos[1] + 1) // self.tile_size
+        bottom_left_x = (sprite_pos[0] + 1) // self.tile_size
+        bottom_left_y = (sprite_pos[1] + self.tile_size - 1) // self.tile_size
         
-        if self.map[tile_y][tile_x] % 2 == 0:
-            # return true if there is a collision
+        # if the move results in a collision, return true
+        if self.map[top_left_y][top_left_x] % 2 == 0 or self.map[bottom_right_y][bottom_right_x] % 2 == 0 or self.map[top_right_y][top_right_x] % 2 == 0 or self.map[bottom_left_y][bottom_left_x] % 2 == 0:
             return True
-
+        # return false if there was no collision
         return False
 
 
@@ -188,13 +191,11 @@ class Player(pygame.sprite.Sprite):
         screen.blit(self.image, (self.pos))
     
     def update(self, map):
-        if not map.check_collision([self.pos[0] + (self.move_speed * self.vel_x), 
+        if not map.check_collision(self.rect,
+                                    [self.pos[0] + (self.move_speed * self.vel_x), 
                                     self.pos[1] + (self.move_speed * self.vel_y)]):
-            print("No Collision")
             self.pos = [self.pos[0] + (self.move_speed * self.vel_x), 
                         self.pos[1] + (self.move_speed * self.vel_y)]
-        else:
-            print("Collision detected")
 
     def get_position(self):
         return self.pos
@@ -253,7 +254,6 @@ def main():
 
         # write game logic here
         player.update(level_map)
-        level_map.check_collision([162, 7])
         
         # clear the screen before drawing
         screen.fill(AMAZON)
