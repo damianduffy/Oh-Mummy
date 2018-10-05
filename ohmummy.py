@@ -17,6 +17,7 @@ SOUND                   = False
 
 AMAZON                  = (69, 139, 116)
 WALL                    = (211, 84, 0)
+OPEN                    = (0, 0 , 0)
 PATH                    = (154, 125, 10)
 EXIT                    = (93, 173, 226)
 ENTRANCE                = (142, 68, 173)
@@ -39,7 +40,6 @@ def load_image(name, colorkey = None):
         image = pygame.image.load(fullname)
     except pygame.error as message:
         print('Cannot load image:', name)
-        print(os.getcwd())
         raise SystemExit(message)
 
     if colorkey is not None:
@@ -119,12 +119,6 @@ class Dashboard():
 class Map():
     def __init__(self):
         self.map = [
-            # 0 - border
-            # 1 - path (unwalked)
-            # 2 - wall
-            # 3 - path (walked)
-            # 4 - TBC
-            # 5 - exit / entrance
             [0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0],
             [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
             [0, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0],
@@ -142,9 +136,19 @@ class Map():
             "1": PATH,
             "2": WALL,
             "3": TRAIL,
-            "4": "TBC",
-            "5": ENTRANCE
+            "4": OPEN,
+            "5": ENTRANCE,
+            "7": EXIT
         }
+        self.map_secrets = [
+            [2, 2], [2, 4], [2, 6], [2, 8],
+            [4, 2], [4, 4], [4, 6], [4, 8],
+            [6, 2], [6, 4], [6, 6], [6, 8],
+            [8, 2], [8, 4], [8, 6], [8, 8],
+        ]
+        self.door = [5, 0]
+        self.map_target = 16
+        self.map_unlocked = []
         self.tile_size = 32
         self.map_height = len(self.map)
         self.map_width = len(self.map[0])
@@ -161,17 +165,32 @@ class Map():
     def check_tile_passable(self, pos):
         tile = [pos[0] // self.tile_size, pos[1] // self.tile_size]
         if self.map[tile[1]][tile[0]] % 2 == 0:
-            print("map NOT passable")
             return False
-        print("map passable")
         return True
     
     def get_tile_value(self, tile):
-        print(self.map[tile[1]][tile[0]])
         return self.map[tile[1]][tile[0]]
     
     def set_tile_value(self, tile, value):
         self.map[tile[1]][tile[0]] = value
+    
+    def update(self):
+        for tile in self.map_secrets:
+            if self.check_surrounded(tile, 3) == 8:
+                self.map[tile[1]][tile[0]] = 4
+                self.map_unlocked.append(tile)
+                self.map_secrets.remove(tile)
+
+        if len(self.map_unlocked) == self.map_target:
+            self.map[self.door[1]][self.door[0]] = 7
+
+    def check_surrounded(self, tile, value):
+        count = 0
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                if self.map[tile[1] + i][tile[0] + j] == value:
+                    count += 1
+        return count
 
 
 class Player(pygame.sprite.Sprite):
@@ -254,7 +273,6 @@ class Player(pygame.sprite.Sprite):
             self.moving_y = False
 
 
-
 def main():
     # create the map
     level_map = Map()
@@ -299,6 +317,7 @@ def main():
 
         # write game logic here
         player.update(level_map)
+        level_map.update()
         
         # clear the screen before drawing
         screen.fill(AMAZON)
