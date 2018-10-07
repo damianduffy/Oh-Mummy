@@ -210,6 +210,8 @@ class Player(pygame.sprite.Sprite):
         self.image_frame = 0
         self.image_direction = "WEST"
         self.image_max_frames = 4
+        self.animate_clock = 0
+        self.animate_speed = 180        # lower number is faster
         self.image_animate = {
             "NORTH": 0,
             "SOUTH": 1,
@@ -219,7 +221,9 @@ class Player(pygame.sprite.Sprite):
         }
     
     def draw(self):
-        screen.blit(self.image, self.pos, (self.image_frame, (self.image_animate[self.image_direction] * self.size), 32, 32))
+        if pygame.time.get_ticks() >= self.animate_clock + self.animate_speed:
+            self.animate()
+        screen.blit(self.image, self.pos, ((self.image_frame * self.size), (self.image_animate[self.image_direction] * self.size), 32, 32))
 
     def update(self, map):
         if self.moving_x == True:
@@ -260,6 +264,15 @@ class Player(pygame.sprite.Sprite):
         if map.get_tile_value(self.get_current_tile()) == 1:
             map.set_tile_value(self.get_current_tile(), 3)
     
+    def animate(self):
+        self.animate_clock = pygame.time.get_ticks()
+        if self.vel_x != 0 or self.vel_y != 0:
+            self.image_frame += 1
+            if self.image_frame == self.image_max_frames:
+                self.image_frame = 0
+        else:
+            self.image_frame = 0
+        
     def arrived_x(self):
         if self.pos[0] == self.dest_pos[0]:
             return True
