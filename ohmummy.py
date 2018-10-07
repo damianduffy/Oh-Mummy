@@ -201,15 +201,25 @@ class Player(pygame.sprite.Sprite):
         self.vel_x = 0
         self.vel_y = 0
         self.move_speed = 4
-        self.image = load_image("character_temp.png")
+        self.image = load_image("explorer.png")
         self.rect = self.image.get_rect()
         self.size = 32
         self.dest_pos = [pos[0], pos[1]]
         self.moving_x = False
         self.moving_y = False
+        self.image_frame = 0
+        self.image_direction = "WEST"
+        self.image_max_frames = 4
+        self.image_animate = {
+            "NORTH": 0,
+            "SOUTH": 1,
+            "WEST": 2,
+            "EAST": 3,
+            "DEAD": 4
+        }
     
     def draw(self):
-        screen.blit(self.image, (self.pos))
+        screen.blit(self.image, self.pos, (self.image_frame, (self.image_animate[self.image_direction] * self.size), 32, 32))
 
     def update(self, map):
         if self.moving_x == True:
@@ -230,8 +240,21 @@ class Player(pygame.sprite.Sprite):
             if self.arrived_y():
                 self.vel_y = 0
         
-        self.pos[0] = self.pos[0] + (self.move_speed * self.get_delta(self.pos[0], self.dest_pos[0]))
-        self.pos[1] = self.pos[1] + (self.move_speed * self.get_delta(self.pos[1], self.dest_pos[1]))
+        x_vel = self.get_delta(self.pos[0], self.dest_pos[0])
+        y_vel = self.get_delta(self.pos[1], self.dest_pos[1])
+
+        self.pos[0] = self.pos[0] + (self.move_speed * x_vel)
+        self.pos[1] = self.pos[1] + (self.move_speed * y_vel)
+
+        if x_vel < 0:
+            self.image_direction = "WEST"
+        elif x_vel > 0:
+            self.image_direction = "EAST"
+        elif y_vel > 0:
+            self.image_direction = "SOUTH"
+        elif y_vel < 0:
+            self.image_direction = "NORTH"
+
 
         # update the map tile
         if map.get_tile_value(self.get_current_tile()) == 1:
