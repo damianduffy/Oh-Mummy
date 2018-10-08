@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import *
 from pytmx import load_pygame
 import os
+import random
 
 # Global configuration options
 SCREENSIZE              = [960, 540]
@@ -13,7 +14,7 @@ GAME_STATE_SPLASH       = 1
 GAME_STATE_MENU         = 2
 GAME_STATE_RUNNING      = 3
 GAME_STATE_OVER         = 4
-SOUND                   = False
+SOUND                   = True
 
 AMAZON                  = (69, 139, 116)
 WALL                    = (211, 84, 0)
@@ -208,7 +209,7 @@ class Player(pygame.sprite.Sprite):
         self.moving_x = False
         self.moving_y = False
         self.image_frame = 0
-        self.image_direction = "WEST"
+        self.image_direction = "SOUTH"
         self.image_max_frames = 4
         self.animate_clock = 0
         self.animate_speed = 180        # lower number is faster
@@ -247,9 +248,11 @@ class Player(pygame.sprite.Sprite):
         x_vel = self.get_delta(self.pos[0], self.dest_pos[0])
         y_vel = self.get_delta(self.pos[1], self.dest_pos[1])
 
+        # update player position
         self.pos[0] = self.pos[0] + (self.move_speed * x_vel)
         self.pos[1] = self.pos[1] + (self.move_speed * y_vel)
 
+        # select correct sprite depending on which direction player facing
         if x_vel < 0:
             self.image_direction = "WEST"
         elif x_vel > 0:
@@ -258,7 +261,6 @@ class Player(pygame.sprite.Sprite):
             self.image_direction = "SOUTH"
         elif y_vel < 0:
             self.image_direction = "NORTH"
-
 
         # update the map tile
         if map.get_tile_value(self.get_current_tile()) == 1:
@@ -309,18 +311,81 @@ class Player(pygame.sprite.Sprite):
             self.moving_y = False
 
 
+class Mummy(pygame.sprite.Sprite):
+    def __init__(self, pos):
+        pygame.sprite.Sprite.__init__(self)
+        self.pos = pos
+        self.vel_x = random.randrange(-1, 1, 2)
+        self.vel_y = 0
+        self.move_speed = 3
+        self.image = load_image("character_temp.png")
+        self.rect = self.image.get_rect()
+        self.size = 32
+        self.dest_pos = [pos[0], pos[1]]
+        self.moving_x = False
+        self.moving_y = False
+        self.image_frame = 0
+        self.image_direction = "SOUTH"
+        self.image_max_frames = 4
+        self.animate_clock = 0
+        self.animate_speed = 180        # lower number is faster
+        self.image_animate = {
+            "NORTH": 0,
+            "SOUTH": 1,
+            "WEST": 2,
+            "EAST": 3,
+            "DEAD": 4
+        }
+
+    def draw(self):
+        screen.blit(self.image, self.pos)
+
+    def update(self, map):
+        print("Vel X:", self.vel_x)
+        self.moving_x = True
+
+        if self.moving_x == True:
+            if self.arrived_x():
+                next_move_pos = [self.dest_pos[0] + (self.size * self.vel_x), self.dest_pos[1]]
+                if map.check_tile_passable(next_move_pos):
+                    self.dest_pos[0] = next_move_pos[0]
+                else:
+                    self.vel_x *= -1
+        else:
+            if self.arrived_x():
+                self.vel_x = 0
+        
+        x_vel = self.get_delta(self.pos[0], self.dest_pos[0])
+        
+        self.pos[0] = self.pos[0] + (self.move_speed * x_vel)
+
+    def get_delta(self, orig, dest):
+        if dest - orig > 0:
+            return 1
+        elif dest - orig < 0:
+            return -1
+        else:
+            return 0
+    
+    def arrived_x(self):
+        if self.pos[0] == self.dest_pos[0]:
+            return True
+        return False
+
+
 def main():
     # create the map
     level_map = Map()
-    background_track = load_sound("Streets_of_Cairo.ogg")
+    background_track = load_sound("oh-mummy.ogg")
 
     # create the dashboard
     
     # create the player
-    player = Player([160, 32])
+    player = Player([160, 0])
 
     # load a mob
-    
+    dexter = Mummy([32, 32])
+
     # create the Interface
     
     # start music
@@ -353,6 +418,7 @@ def main():
 
         # write game logic here
         player.update(level_map)
+        dexter.update(level_map)
         level_map.update()
         
         # clear the screen before drawing
@@ -361,6 +427,7 @@ def main():
         # write draw code here
         level_map.draw(screen)
         player.draw()
+        dexter.draw()
 
         # display whatever is drawn
         pygame.display.update()
