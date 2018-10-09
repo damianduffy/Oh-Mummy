@@ -11,22 +11,18 @@ The game is primarily for one player but has a limited multiplayer mode in which
 The music played during gameplay is based on the children's song The Streets of Cairo, or the Poor Little Country Maid. 
 
 ## To do list
- - collision detection for tiles on map
+ - sound effects
  - 'dashboard' to display score, lives, etc.
  - start splash screen
  - menu screen
- - levels
- - music
- - sound effects
- - animated player character
- - mummy class
- - 'walked' path
- - unlocked grids
- - level entrance point
- - level exit point
+ - background story
+ - options menu
  - high-score table
- - mummy AI
  - credits
+ - game over screen
  - key objects
  - scroll object
  - tomb object
+ - more levels
+ - object reveal
+ - refactor
