@@ -3,6 +3,7 @@ from pygame.locals import *
 from pytmx import load_pygame
 import os
 import random
+import math
 
 # Global configuration options
 SCREENSIZE              = [960, 540]
@@ -88,6 +89,20 @@ def pause_game():
                     pause = -1
 
     pygame.mixer.unpause()
+
+
+def distance(p, q):
+    return math.sqrt((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2)
+
+
+def check_collision(player, enemy_list):
+    player_center = player.get_center()
+    hit_dist = 32
+
+    for enemy in enemy_list:
+        if distance(player_center, enemy.get_center()) < hit_dist:
+            return True 
+    return False
 
 
 class Dashboard():
@@ -302,6 +317,9 @@ class Player(pygame.sprite.Sprite):
 
     def get_pos(self):
         return self.pos
+    
+    def get_center(self):
+        return [self.pos[0] + (self.size // 2), self.pos[1] + (self.size // 2)]
 
     def set_vel_x(self, direction):
         if direction != 0:
@@ -381,6 +399,12 @@ class Mummy(pygame.sprite.Sprite):
         else:
             return 0
 
+    def get_pos(self):
+        return self.pos
+    
+    def get_center(self):
+        return [self.pos[0] + (self.size // 2), self.pos[1] + (self.size // 2)]
+
     def get_current_tile(self):
         return [self.pos[0] // self.size, self.pos[1] // self.size]
     
@@ -429,7 +453,10 @@ def main():
     player = Player([160, 0])
 
     # load a mob
-    dexter = Mummy([32, 32])
+    enemies = []
+    enemies.append(Mummy([32, 32]))
+    enemies.append(Mummy([32 * 8, 32]))
+    enemies.append(Mummy([32, 32 * 8]))
     
     # create the Interface
     
@@ -463,8 +490,10 @@ def main():
 
         # write game logic here
         player.update(level_map)
-        dexter.update(level_map, player)
+        for enemy in enemies:
+            enemy.update(level_map, player)
         level_map.update(player)
+        print("End game:", check_collision(player, enemies))
         
         # clear the screen before drawing
         screen.fill(AMAZON)
@@ -472,7 +501,8 @@ def main():
         # write draw code here
         level_map.draw(screen)
         player.draw()
-        dexter.draw()
+        for enemy in enemies:
+            enemy.draw()
 
         # display whatever is drawn
         pygame.display.update()
