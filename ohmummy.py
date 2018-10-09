@@ -345,7 +345,7 @@ class Mummy(pygame.sprite.Sprite):
         self.vel_x = 0
         self.vel_y = 0
         self.move_speed = 2
-        self.image = load_image("character_temp.png")
+        self.image = load_image("mummy.png")
         self.rect = self.image.get_rect()
         self.size = 32
         self.dest_pos = [pos[0], pos[1]]
@@ -365,7 +365,9 @@ class Mummy(pygame.sprite.Sprite):
         }
 
     def draw(self):
-        screen.blit(self.image, self.pos)
+        if pygame.time.get_ticks() >= self.animate_clock + self.animate_speed:
+            self.animate()
+        screen.blit(self.image, self.pos, ((self.image_frame * self.size), (self.image_animate[self.image_direction] * self.size), 32, 32))
 
     def update(self, map, player):
         # if stationary, select next tile to move to based on player location and available routes
@@ -390,7 +392,14 @@ class Mummy(pygame.sprite.Sprite):
         # update position based on delta to dest tile
         self.pos[0] = self.pos[0] + (self.move_speed * self.get_delta(self.pos[0], self.dest_pos[0]))
         self.pos[1] = self.pos[1] + (self.move_speed * self.get_delta(self.pos[1], self.dest_pos[1]))
-       
+    
+    def animate(self):
+        self.animate_clock = pygame.time.get_ticks()
+        
+        self.image_frame += 1
+        if self.image_frame == self.image_max_frames:
+            self.image_frame = 0
+        
     def get_delta(self, orig, dest):
         if dest - orig > 0:
             return 1
@@ -430,16 +439,20 @@ class Mummy(pygame.sprite.Sprite):
             if valid_moves[2] == True and delta_x > 0:
                 # go east
                 self.dest_pos[0] = self.dest_pos[0] + self.size
+                self.image_direction = "EAST"
             elif valid_moves[3] == True and delta_x < 0:
                 # go west
                 self.dest_pos[0] = self.dest_pos[0] - self.size
+                self.image_direction = "WEST"
         else:
             if valid_moves[0] == True and delta_y < 0:
                 # go north
                 self.dest_pos[1] = self.dest_pos[1] - self.size
+                self.image_direction = "NORTH"
             elif valid_moves[1] == True and delta_y > 0:
                 # go south
                 self.dest_pos[1] = self.dest_pos[1] + self.size
+                self.image_direction = "SOUTH"
 
 
 def main():

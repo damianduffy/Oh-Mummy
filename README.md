@@ -12,6 +12,7 @@ The music played during gameplay is based on the children's song The Streets of 
 
 ## To do list
  - sound effects
+ - animate mummy sprite
  - 'dashboard' to display score, lives, etc.
  - start splash screen
  - menu screen
