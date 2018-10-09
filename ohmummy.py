@@ -175,12 +175,13 @@ class Map():
     def set_tile_value(self, tile, value):
         self.map[tile[1]][tile[0]] = value
     
-    def update(self):
+    def update(self, player):
         for tile in self.map_secrets:
             if self.check_surrounded(tile, 3) == 8:
                 self.map[tile[1]][tile[0]] = 4
                 self.map_unlocked.append(tile)
                 self.map_secrets.remove(tile)
+                player.scored(5)
 
         if len(self.map_unlocked) == self.map_target:
             self.map[self.door[1]][self.door[0]] = 7
@@ -265,6 +266,9 @@ class Player(pygame.sprite.Sprite):
         # update the map tile
         if map.get_tile_value(self.get_current_tile()) == 1:
             map.set_tile_value(self.get_current_tile(), 3)
+        
+        # display the score
+        print("SCORE:", self.score)
     
     def animate(self):
         self.animate_clock = pygame.time.get_ticks()
@@ -296,6 +300,9 @@ class Player(pygame.sprite.Sprite):
     def get_current_tile(self):
         return [self.pos[0] // self.size, self.pos[1] // self.size]
 
+    def get_pos(self):
+        return self.pos
+
     def set_vel_x(self, direction):
         if direction != 0:
             self.moving_x = True
@@ -310,14 +317,16 @@ class Player(pygame.sprite.Sprite):
         else:
             self.moving_y = False
 
+    def scored(self, value):
+        self.score += value
 
 class Mummy(pygame.sprite.Sprite):
     def __init__(self, pos):
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
-        self.vel_x = random.randrange(-1, 1, 2)
+        self.vel_x = 0
         self.vel_y = 0
-        self.move_speed = 3
+        self.move_speed = 2
         self.image = load_image("character_temp.png")
         self.rect = self.image.get_rect()
         self.size = 32
@@ -340,25 +349,30 @@ class Mummy(pygame.sprite.Sprite):
     def draw(self):
         screen.blit(self.image, self.pos)
 
-    def update(self, map):
-        print("Vel X:", self.vel_x)
-        self.moving_x = True
+    def update(self, map, player):
+        # if stationary, select next tile to move to based on player location and available routes
+        if self.pos == self.dest_pos and self.pos != player.get_pos():
+            # check what surrounding tiles are passable
+            valid_routes = [False, False, False, False]
+            if map.check_tile_passable([self.pos[0], self.pos[1] - self.size]):
+                # north
+                valid_routes[0] = True
+            if map.check_tile_passable([self.pos[0], self.pos[1] + self.size]):
+                # south
+                valid_routes[1] =True
+            if map.check_tile_passable([self.pos[0] + self.size, self.pos[1]]):
+                # east
+                valid_routes[2] = True
+            if map.check_tile_passable([self.pos[0] - self.size, self.pos[1]]):
+                # west
+                valid_routes[3] = True
+            
+            self.set_dest_pos(player.get_pos(), valid_routes)
 
-        if self.moving_x == True:
-            if self.arrived_x():
-                next_move_pos = [self.dest_pos[0] + (self.size * self.vel_x), self.dest_pos[1]]
-                if map.check_tile_passable(next_move_pos):
-                    self.dest_pos[0] = next_move_pos[0]
-                else:
-                    self.vel_x *= -1
-        else:
-            if self.arrived_x():
-                self.vel_x = 0
-        
-        x_vel = self.get_delta(self.pos[0], self.dest_pos[0])
-        
-        self.pos[0] = self.pos[0] + (self.move_speed * x_vel)
-
+        # update position based on delta to dest tile
+        self.pos[0] = self.pos[0] + (self.move_speed * self.get_delta(self.pos[0], self.dest_pos[0]))
+        self.pos[1] = self.pos[1] + (self.move_speed * self.get_delta(self.pos[1], self.dest_pos[1]))
+       
     def get_delta(self, orig, dest):
         if dest - orig > 0:
             return 1
@@ -366,11 +380,42 @@ class Mummy(pygame.sprite.Sprite):
             return -1
         else:
             return 0
+
+    def get_current_tile(self):
+        return [self.pos[0] // self.size, self.pos[1] // self.size]
     
-    def arrived_x(self):
-        if self.pos[0] == self.dest_pos[0]:
-            return True
-        return False
+    def set_dest_pos(self, player_pos, valid_moves):
+        prefer_x = False
+        prefer_y = False
+
+        delta_x = player_pos[0] - self.pos[0]
+        delta_y = player_pos[1] - self.pos[1]
+
+        if abs(delta_x) > abs(delta_y):
+            if valid_moves[2] == True or valid_moves[3] == True:
+                prefer_x = True
+            else:
+                prefer_y = True
+        else:
+            if valid_moves[0] == True or valid_moves[1] == True:
+                prefer_y = True
+            else:
+                prefer_x = True
+
+        if prefer_x == True:
+            if valid_moves[2] == True and delta_x > 0:
+                # go east
+                self.dest_pos[0] = self.dest_pos[0] + self.size
+            elif valid_moves[3] == True and delta_x < 0:
+                # go west
+                self.dest_pos[0] = self.dest_pos[0] - self.size
+        else:
+            if valid_moves[0] == True and delta_y < 0:
+                # go north
+                self.dest_pos[1] = self.dest_pos[1] - self.size
+            elif valid_moves[1] == True and delta_y > 0:
+                # go south
+                self.dest_pos[1] = self.dest_pos[1] + self.size
 
 
 def main():
@@ -385,7 +430,7 @@ def main():
 
     # load a mob
     dexter = Mummy([32, 32])
-
+    
     # create the Interface
     
     # start music
@@ -418,8 +463,8 @@ def main():
 
         # write game logic here
         player.update(level_map)
-        dexter.update(level_map)
-        level_map.update()
+        dexter.update(level_map, player)
+        level_map.update(player)
         
         # clear the screen before drawing
         screen.fill(AMAZON)
