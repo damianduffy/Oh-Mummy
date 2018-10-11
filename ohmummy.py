@@ -339,8 +339,9 @@ class Player(pygame.sprite.Sprite):
         self.score += value
 
 class Mummy(pygame.sprite.Sprite):
-    def __init__(self, pos):
+    def __init__(self, pos, AI_type):
         pygame.sprite.Sprite.__init__(self)
+        self.AI_type = AI_type
         self.pos = pos
         self.vel_x = 0
         self.vel_y = 0
@@ -379,7 +380,7 @@ class Mummy(pygame.sprite.Sprite):
                 valid_routes[0] = True
             if map.check_tile_passable([self.pos[0], self.pos[1] + self.size]):
                 # south
-                valid_routes[1] =True
+                valid_routes[1] = True
             if map.check_tile_passable([self.pos[0] + self.size, self.pos[1]]):
                 # east
                 valid_routes[2] = True
@@ -387,7 +388,10 @@ class Mummy(pygame.sprite.Sprite):
                 # west
                 valid_routes[3] = True
             
-            self.set_dest_pos(player.get_pos(), valid_routes)
+            if self.AI_type == 1:
+                self.set_dest_pos_AI_1(player.get_pos(), valid_routes)
+            else:
+                self.set_dest_pos_AI_2(valid_routes)
 
         # update position based on delta to dest tile
         self.pos[0] = self.pos[0] + (self.move_speed * self.get_delta(self.pos[0], self.dest_pos[0]))
@@ -408,6 +412,13 @@ class Mummy(pygame.sprite.Sprite):
         else:
             return 0
 
+    '''
+    #################
+
+    NEED TO SETUP THE .GITIGNORE FILE
+
+    #################
+    '''
     def get_pos(self):
         return self.pos
     
@@ -417,7 +428,7 @@ class Mummy(pygame.sprite.Sprite):
     def get_current_tile(self):
         return [self.pos[0] // self.size, self.pos[1] // self.size]
     
-    def set_dest_pos(self, player_pos, valid_moves):
+    def set_dest_pos_AI_1(self, player_pos, valid_moves):
         prefer_x = False
         prefer_y = False
 
@@ -454,6 +465,29 @@ class Mummy(pygame.sprite.Sprite):
                 self.dest_pos[1] = self.dest_pos[1] + self.size
                 self.image_direction = "SOUTH"
 
+    def set_dest_pos_AI_2(self, valid_moves):
+        direction = random.randint(0, 3)
+
+        while valid_moves[direction] == False:
+            direction = random.randint(0, 3)
+
+        if direction == 0:
+            # go north
+            self.dest_pos[1] = self.dest_pos[1] - self.size
+            self.image_direction = "NORTH"
+        elif direction == 1:
+            # go south
+            self.dest_pos[1] = self.dest_pos[1] + self.size
+            self.image_direction = "SOUTH"
+        elif direction == 2:
+            # go east
+            self.dest_pos[0] = self.dest_pos[0] + self.size
+            self.image_direction = "EAST"
+        else:
+            # go west
+            self.dest_pos[0] = self.dest_pos[0] - self.size
+            self.image_direction = "WEST"
+
 
 def main():
     # create the map
@@ -467,9 +501,9 @@ def main():
 
     # load a mob
     enemies = []
-    enemies.append(Mummy([32, 32]))
-    enemies.append(Mummy([32 * 8, 32]))
-    enemies.append(Mummy([32, 32 * 8]))
+    enemies.append(Mummy([32, 32], 1))
+    enemies.append(Mummy([32 * 8, 32], 2))
+    enemies.append(Mummy([32, 32 * 8], 2))
     
     # create the Interface
     
