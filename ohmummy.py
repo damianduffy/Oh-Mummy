@@ -6,7 +6,7 @@ import random
 import math
 
 # Global configuration options
-SCREENSIZE              = [960, 540]
+SCREENSIZE              = [352, 375]#[960, 540]
 FPS                     = 30
 TITLE                   = "Oh Mummy"
 SHOW_MOUSE              = True
@@ -32,7 +32,8 @@ screen = pygame.display.set_mode(SCREENSIZE)
 pygame.mouse.set_visible(SHOW_MOUSE)
 pygame.display.set_caption(TITLE)
 clock = pygame.time.Clock()
-
+pygame.font.init()
+myfont = pygame.font.SysFont('Arial', 14)
 
 # Define helper functions
 def load_image(name, colorkey = None):
@@ -106,31 +107,22 @@ def check_collision(player, enemy_list):
 
 
 class Dashboard():
-    def __init__(self, filename):
-        self.game_dashboard = load_pygame(filename)
-        self.score = 0
+    def __init__(self, player):
+        self.score = player.get_score()
+        '''
         self.inventory = []
         self.keys = []
         self.ammo = 0
         self.lives = 0
+        '''
 
     def draw(self, screen):
-        for layer in self.game_dashboard.visible_layers:
-            for x, y, gid, in layer:
-                tile = self.game_dashboard.get_tile_image_by_gid(gid)
-                if tile != None:
-                    screen.blit(tile, (x * self.game_dashboard.tilewidth, 
-                                y * self.game_dashboard.tileheight))
+        textsurface = myfont.render('SCORE: {}'.format(self.score), False, (0, 0, 0))
+        screen.blit(textsurface, (5, 355))
     
     def update(self, player):
-        pass
-        '''
         self.score = player.get_score()
-        self.inventory = player.get_score()
-        self.keys = player.get_keys()
-        self.ammo = player.get_ammo()
-        self.lives = player.get_lives()
-        '''
+        
 
 class Map():
     def __init__(self):
@@ -338,6 +330,9 @@ class Player(pygame.sprite.Sprite):
     def scored(self, value):
         self.score += value
 
+    def get_score(self):
+        return self.score
+
 class Mummy(pygame.sprite.Sprite):
     def __init__(self, pos, AI_type):
         pygame.sprite.Sprite.__init__(self)
@@ -494,11 +489,12 @@ def main():
     level_map = Map()
     background_track = load_sound("oh-mummy.ogg")
 
-    # create the dashboard
-    
     # create the player
     player = Player([160, 0])
 
+    # create the dashboard
+    dash = Dashboard(player)
+    
     # load a mob
     enemies = []
     enemies.append(Mummy([32, 32], 1))
@@ -541,7 +537,8 @@ def main():
             enemy.update(level_map, player)
         level_map.update(player)
         print("End game:", check_collision(player, enemies))
-        
+        dash.update(player)
+
         # clear the screen before drawing
         screen.fill(AMAZON)
 
@@ -550,6 +547,7 @@ def main():
         player.draw()
         for enemy in enemies:
             enemy.draw()
+        dash.draw(screen)
 
         # display whatever is drawn
         pygame.display.update()
