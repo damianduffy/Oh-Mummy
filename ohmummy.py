@@ -4,6 +4,7 @@ from pytmx import load_pygame
 import os
 import random
 import math
+from gametext import GameText
 
 # Global configuration options
 SCREENSIZE              = [352, 375]#[960, 540]
