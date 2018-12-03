@@ -45,7 +45,7 @@ def main():
     # load a mob
     
     # create the Interface
-    message = GameText()
+    message = GameText(SCREENSIZE)
 
     # start music
 
@@ -66,6 +66,8 @@ def main():
 
         # write draw code here
         message.draw(screen)
+        message.set_halign(1)
+        message.set_valign(1)
 
         # display whatever is drawn
         pygame.display.update()
