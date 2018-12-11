@@ -34,7 +34,7 @@ pygame.mouse.set_visible(SHOW_MOUSE)
 pygame.display.set_caption(TITLE)
 clock = pygame.time.Clock()
 pygame.font.init()
-myfont = pygame.font.SysFont('Arial', 14)
+myfont = pygame.font.Font('data/fnt/PressStart2P-Regular.ttf', 16)
 
 # Define helper functions
 def load_image(name, colorkey = None):
@@ -103,13 +103,14 @@ def check_collision(player, enemy_list):
 
     for enemy in enemy_list:
         if distance(player_center, enemy.get_center()) < hit_dist:
-            return True 
+            player.life_hit()
     return False
 
 
 class Dashboard():
     def __init__(self, player):
         self.score = player.get_score()
+        self.lives = player.get_lives()
         '''
         self.inventory = []
         self.keys = []
@@ -118,12 +119,16 @@ class Dashboard():
         '''
 
     def draw(self, screen):
-        textsurface = myfont.render('SCORE: {}'.format(self.score), False, (0, 0, 0))
+        if self.lives > 0:
+            textsurface = myfont.render('SCORE: {}     LIVES {}'.format(self.score, self.lives), False, (0, 0, 0))
+        else:
+            textsurface = myfont.render('SCORE: {}  GAME OVER'.format(self.score), False, (0, 0, 0))
         screen.blit(textsurface, (5, 355))
     
     def update(self, player):
         self.score = player.get_score()
-        
+        self.lives = player.get_lives()
+    
 
 class Map():
     def __init__(self):
@@ -161,15 +166,19 @@ class Map():
         self.tile_size = 32
         self.map_height = len(self.map)
         self.map_width = len(self.map[0])
+        self.wall_img = load_image("wall.png")
 
     def draw(self, screen):
         for row in range(self.map_width):            
             for col in range(self.map_height):
-                pygame.draw.rect(
-                    screen, 
-                    self.map_set[str(self.map[row][col])], 
-                    (col * self.tile_size, row * self.tile_size, self.tile_size, self.tile_size)
-                )          
+                if self.map[row][col] == 0:
+                    screen.blit(self.wall_img, [col * self.tile_size, row * self.tile_size])
+                else:
+                    pygame.draw.rect(
+                        screen, 
+                        self.map_set[str(self.map[row][col])], 
+                        (col * self.tile_size, row * self.tile_size, self.tile_size, self.tile_size)
+                    )          
     
     def check_tile_passable(self, pos):
         tile = [pos[0] // self.tile_size, pos[1] // self.tile_size]
@@ -207,6 +216,9 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, pos):
         pygame.sprite.Sprite.__init__(self)
         self.score = 0
+        self.lives = 3
+        self.hit_time = 0               # timestamp from last life loss.  Player invincible for set amount of time after last hit.
+        self.hit_sound = load_sound('hit1.ogg')
         self.pos = pos
         self.vel_x = 0
         self.vel_y = 0
@@ -275,9 +287,6 @@ class Player(pygame.sprite.Sprite):
         if map.get_tile_value(self.get_current_tile()) == 1:
             map.set_tile_value(self.get_current_tile(), 3)
         
-        # display the score
-        print("SCORE:", self.score)
-    
     def animate(self):
         self.animate_clock = pygame.time.get_ticks()
         if self.vel_x != 0 or self.vel_y != 0:
@@ -333,6 +342,16 @@ class Player(pygame.sprite.Sprite):
 
     def get_score(self):
         return self.score
+    
+    def get_lives(self):
+        return self.lives
+    
+    def life_hit(self):
+        if pygame.time.get_ticks() - self.hit_time > 2000:
+            self.lives -= 1
+            self.hit_sound.play()
+            self.hit_time = pygame.time.get_ticks()
+
 
 class Mummy(pygame.sprite.Sprite):
     def __init__(self, pos, AI_type):
